@@ -252,7 +252,7 @@ class MY_Model extends CI_Model {
      * @access public
      * @return array
      */
-    public function paginate($offset, $quantity = 10, $where = '' {
+    public function paginate($offset, $quantity = 10, $where = '') {
         if (is_array($where)) {
             foreach ($where as $w){
                 $this->db->where($w);
