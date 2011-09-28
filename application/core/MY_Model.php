@@ -4,10 +4,11 @@
  *
  * Model MY_Model.
  *
- * This model is a collection of generic methods to get and save data.
+ * This model is a collection of generic methods to retrieve and save data to the database.
  *
  * @author Evaldo Junior <junior@casoft.info>
- * @subpackage  models
+ * @subpackage  core
+ * @version 0.1
  *
  * Copyright 2011 CaSoft Tecnologia e Desenvolvimento. All rights reserved.
  *
@@ -48,16 +49,36 @@ class MY_Model extends CI_Model {
      *
      * The database table of the model
      *
+     * When extending this class, you should set the table name in the constructor
+     *
      * @var string
      * @access protected
      */
     protected $table;
 
     /**
-     * construtor method
+     * return_type
+     *
+     * Which type of data methods should return.
+     * Options are:
+     *   - 'array' (Default)
+     *   - 'object'
+     *
+     * If you want methods to return objects, change this value
+     * in your Models' constructors.
+     *
+     * @var mixed
+     * @access protected
+     */
+    protected $return_type;
+
+    /**
+     * constructor method
      */
     public function  __construct() {
         parent::__construct();
+
+        $this->return_type = 'array';
     }
 
     /**
@@ -65,29 +86,40 @@ class MY_Model extends CI_Model {
      *
      * Method to retrieve data from database
      *
-     * @param array $where
-     * @param array $fields
+     * @param array $where      Can be an array or a string
+     * @param array $fields     Can be an array or an string
      * @access public
      * @return void
      */
-    public function get($where = array(), $fields = array()) {
+    public function get($where = '', $fields = '') {
         $this->db->from($this->table);
 
-        if (count($where) > 0) {
+        if (is_array($where)) {
             foreach ($where as $w){
                 $this->db->where($w);
             }
         }
+        elseif (strlen($where) > 0) {
+            $this->db->where($where);
+        }
 
-        if (count($fields) > 0) {
+        if (is_array($fields)) {
             foreach ($fields as $field) {
                 $this->db->select($field);
             }
         }
+        elseif (strlen($where) > 0) {
+            $this->db->select($fields);
+        }
 
         $query = $this->db->get();
 
-        $results = $query->result_array();
+        if ($this->return_type == 'array') {
+            $results = $query->result_array();
+        }
+        else {
+            $results = $query->result();
+        }
 
         if (count($results) == 1) {
             return $results[0];
@@ -99,11 +131,15 @@ class MY_Model extends CI_Model {
     /**
      * save
      *
-     * Method to save data to the database
+     * Method to save data to the database.
      *
-     * @param mixed $data
+     * To update data you must have an 'id' element in the given array.
+     *
+     * This method returns the row id (inserted or updated)
+     *
+     * @param array $data
      * @access public
-     * @return void
+     * @return integer
      */
     public function save($data) {
         if (isset($data['id'])) {
@@ -112,9 +148,11 @@ class MY_Model extends CI_Model {
         }
         else {
             $this->db->insert($this->table, $data);
+
+            $data['id'] = $this->db->insert_id();
         }
 
-        return TRUE;
+        return $data['id'];
     }
 
     /**
@@ -122,27 +160,42 @@ class MY_Model extends CI_Model {
      *
      * Method to retrieve data from database
      *
-     * @param array $where
-     * @param array $fields
+     * @param array $where      Can be an array or a string
+     * @param array $fields     Can be an array or a string
      * @access public
-     * @return void
+     * @return array
      */
-    public function filter($where = array(), $fields = array()) {
+    public function filter($where = '', $fields = '') {
         $this->db->from($this->table);
 
-        if (count($where) > 0) {
+        if (is_array($where)) {
             foreach ($where as $w){
                 $this->db->where($w);
             }
         }
+        elseif (strlen($where) > 0) {
+            $this->db->where($where);
+        }
 
-        if (count($fields) > 0) {
+        if (is_array($fields)) {
             foreach ($fields as $field) {
                 $this->db->select($field);
             }
         }
+        elseif (strlen($where) > 0) {
+            $this->db->select($fields);
+        }
 
-        return $this->db->get()->result_array();
+        $query = $this->db->get();
+
+        if ($this->return_type == 'array') {
+            $results = $query->result_array();
+        }
+        else {
+            $results = $query->result();
+        }
+
+        return $results;
     }
 
     /**
@@ -150,9 +203,9 @@ class MY_Model extends CI_Model {
      *
      * removes a row from database
      *
-    * @param integer $id
+     * @param integer $id
      * @access public
-     * @return void
+     * @return booelan
      */
     public function delete($id) {
         if (! is_numeric($id)) {
@@ -175,11 +228,14 @@ class MY_Model extends CI_Model {
      * @access public
      * @return void
      */
-    public function count_results($where = array()) {
-        if (count($where) > 0) {
-            foreach($where as $w) {
+    public function count_results($where = '') {
+        if (is_array($where)) {
+            foreach ($where as $w){
                 $this->db->where($w);
             }
+        }
+        elseif (strlen($where) > 0) {
+            $this->db->where($where);
         }
 
         return $this->db->count_all_results($this->table);
@@ -192,20 +248,32 @@ class MY_Model extends CI_Model {
      *
      * @param int $offset
      * @param int $quantity
-     * @param array $where
+     * @param array $where          Can be an array or a string
      * @access public
-     * @return void
+     * @return array
      */
-    public function paginate($offset, $quantity = 10, $where = array()) {
-        if (count($where) > 0) {
-            foreach ($where as $w) {
+    public function paginate($offset, $quantity = 10, $where = '' {
+        if (is_array($where)) {
+            foreach ($where as $w){
                 $this->db->where($w);
             }
+        }
+        elseif (strlen($where) > 0) {
+            $this->db->where($where);
         }
 
         $this->db->limit($quantity, $offset);
 
-        return $this->db->get($this->table)->result_array();
+        $this->db->get($this->table);
+
+        if ($this->return_type == 'array') {
+            $results = $query->result_array();
+        }
+        else {
+            $results = $query->result();
+        }
+
+        return $results;
     }
 }
 
