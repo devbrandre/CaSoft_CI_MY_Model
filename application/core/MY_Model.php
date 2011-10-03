@@ -7,6 +7,8 @@
  * This model is a collection of generic methods to retrieve and save data to the database.
  *
  * @author Evaldo Junior <junior@casoft.info>
+ * @author André da Silva Severino <andredasilvaseverino@gmail.com>
+ * @url       http://andrewd.com.br
  * @subpackage  core
  * @version 0.1
  *
@@ -81,52 +83,6 @@ class MY_Model extends CI_Model {
         $this->return_type = 'array';
     }
 
-    /**
-     * get
-     *
-     * Method to retrieve data from database
-     *
-     * @param array $where      Can be an array or a string
-     * @param array $fields     Can be an array or an string
-     * @access public
-     * @return void
-     */
-    public function get($where = '', $fields = '') {
-        $this->db->from($this->table);
-
-        if (is_array($where)) {
-            foreach ($where as $w){
-                $this->db->where($w);
-            }
-        }
-        elseif (strlen($where) > 0) {
-            $this->db->where($where);
-        }
-
-        if (is_array($fields)) {
-            foreach ($fields as $field) {
-                $this->db->select($field);
-            }
-        }
-        elseif (strlen($where) > 0) {
-            $this->db->select($fields);
-        }
-
-        $query = $this->db->get();
-
-        if ($this->return_type == 'array') {
-            $results = $query->result_array();
-        }
-        else {
-            $results = $query->result();
-        }
-
-        if (count($results) == 1) {
-            return $results[0];
-        }
-
-        return $results;
-    }
 
     /**
      * save
@@ -138,64 +94,67 @@ class MY_Model extends CI_Model {
      * This method returns the row id (inserted or updated)
      *
      * @param array $data
+     * @param array assoc $where (db->update)
+     * 
      * @access public
-     * @return integer
+     * 
+     * @return boolean
      */
-    public function save($data) {
-        if (isset($data['id'])) {
-            $this->db->where('id', $data['id']);
-            $this->db->update($this->table, $data);
+    public function save($data, $where = NULL) {
+        
+        if ( !is_null($where) && is_array($where) && !empty($where) ) {
+            
+            $this->db->where($where);
+            $st = $this->db->update($this->table, $data);
+            
+        } else {
+            $st = $this->db->insert($this->table, $data);
         }
-        else {
-            $this->db->insert($this->table, $data);
-
-            $data['id'] = $this->db->insert_id();
-        }
-
-        return $data['id'];
+        
+        if($st)
+            return TRUE;
+        else
+            return FALSE;
+        
     }
 
     /**
-     * filter
+     * get
      *
      * Method to retrieve data from database
      *
-     * @param array $where      Can be an array or a string
-     * @param array $fields     Can be an array or a string
+     * @param array $fields     array
+     * @param array assoc $where
+     * @param string $orderby   
+     * @param int $ini  
+     * @param int $off 
+     * 
      * @access public
-     * @return array
+     * @return array or object
      */
-    public function filter($where = '', $fields = '') {
-        $this->db->from($this->table);
-
-        if (is_array($where)) {
-            foreach ($where as $w){
-                $this->db->where($w);
-            }
-        }
-        elseif (strlen($where) > 0) {
-            $this->db->where($where);
-        }
-
-        if (is_array($fields)) {
-            foreach ($fields as $field) {
-                $this->db->select($field);
-            }
-        }
-        elseif (strlen($where) > 0) {
-            $this->db->select($fields);
-        }
+    public function get($fields = NULL, $where = NULL, $orderby = NULL, $ini = NULL, $off = NULL)
+    {
+        $this->db->from( $this->table );
+        
+        ( ! is_null($fields) && is_array($fields) ) ? $this->db->select( implode(', ', array_values($fields)) ) : NULL;
+        ( ! is_null($where) && is_array($where) ) ? $this->db->where( $where ) : NULL;
+        ( ! is_null($off) && ! is_null($ini) ) ? $this->db->limit( $ini, $off ) : NULL;
+        ( ! is_null($orderby) ) ? $this->db->order_by( $orderby ) : NULL;
 
         $query = $this->db->get();
-
+        
         if ($this->return_type == 'array') {
             $results = $query->result_array();
         }
         else {
             $results = $query->result();
         }
-
+        
+        if( count($results) == 0 )
+            return $results[0];
+        
         return $results;
+        
     }
 
     /**
@@ -224,15 +183,13 @@ class MY_Model extends CI_Model {
      *
      * Count the number of rows in a table
      *
-     * @param array $where
+     * @param array assoc $where
      * @access public
-     * @return void
+     * @return int
      */
     public function count_results($where = '') {
         if (is_array($where)) {
-            foreach ($where as $w){
-                $this->db->where($w);
-            }
+            $this->db->where($where);
         }
         elseif (strlen($where) > 0) {
             $this->db->where($where);
@@ -240,41 +197,7 @@ class MY_Model extends CI_Model {
 
         return $this->db->count_all_results($this->table);
     }
-
-    /**
-     * paginate
-     *
-     * Function to paginate results from the database. It only retrieve the needed rows
-     *
-     * @param int $offset
-     * @param int $quantity
-     * @param array $where          Can be an array or a string
-     * @access public
-     * @return array
-     */
-    public function paginate($offset, $quantity = 10, $where = '') {
-        if (is_array($where)) {
-            foreach ($where as $w){
-                $this->db->where($w);
-            }
-        }
-        elseif (strlen($where) > 0) {
-            $this->db->where($where);
-        }
-
-        $this->db->limit($quantity, $offset);
-
-        $this->db->get($this->table);
-
-        if ($this->return_type == 'array') {
-            $results = $query->result_array();
-        }
-        else {
-            $results = $query->result();
-        }
-
-        return $results;
-    }
+    
 }
 
 /* End of file MY_Model.php */
