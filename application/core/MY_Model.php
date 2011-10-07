@@ -143,15 +143,15 @@ class MY_Model extends CI_Model {
 
         $query = $this->db->get();
         
-        if ($this->return_type == 'array') {
+        if ($this->return_type == 'array') 
             $results = $query->result_array();
-        }
-        else {
+        elseif($this->return_type == 'row')
+            $results = $query->row();    
+        else 
             $results = $query->result();
-        }
-        
-        if( count($results) == 0 )
-            return $results[0];
+
+        if(count($results) == 0)
+            return NULL;
         
         return $results;
         
@@ -188,14 +188,39 @@ class MY_Model extends CI_Model {
      * @return int
      */
     public function count_results($where = '') {
-        if (is_array($where)) {
+        if (is_array($where)) 
             $this->db->where($where);
-        }
-        elseif (strlen($where) > 0) {
+        
+        elseif (strlen($where) > 0) 
             $this->db->where($where);
-        }
+        
 
         return $this->db->count_all_results($this->table);
+    }
+    
+    /**
+     * setTable
+     * 
+     * Define o nome da tabela
+     * @access public
+     * @param type $table string
+     */
+    public function setTable( $table ) {
+        if( !empty($table) ) 
+            $this->table = $table;
+    }
+    
+    
+    /**
+     * setReturn
+     * 
+     * Define a forma de retorno da consulta
+     * @access public
+     * @param type $type string
+     */
+    public function setReturn( $type ) {
+        if( !empty($type) )
+        $this->return_type = $type;
     }
     
 }
